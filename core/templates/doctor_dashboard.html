@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- карточка врача -->
+        <div class="card mb-4 shadow-sm border-info">
+            <div class="card-body bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-primary mb-0">️ Кабинет Врача</h3>
+                        <p class="text-muted mb-0">Добро пожаловать, {{ doctor.full_name }}</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-info text-dark fs-6">{{ doctor.specialization.name }}</span>
+                        <div class="text-muted small mt-1">Кабинет № {{ doctor.office.number }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- кнопка экспорта -->
+        <div class="mb-3 text-end">
+            <a href="{% url 'export_doctor_xlsx' %}" class="btn btn-success shadow-sm">
+                 Скачать мой журнал приемов
+            </a>
+        </div>
+
+        <!-- таблица расписания -->
+        <h4 class="mb-3"> Мое расписание</h4>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Время</th>
+                            <th>Пациент</th>
+                            <th>Телефон</th>
+                            <th>Статус</th>
+                            <th class="text-end pe-4">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in appointments %}
+                        <!-- основная строка -->
+                        <tr>
+                            <td class="ps-4 fw-bold text-nowrap">
+                                {{ app.date_time|date:"d.m.Y H:i" }}
+                            </td>
+                            <td>
+                                {{ app.patient.full_name }}
+                                <br>
+                                <small class="text-muted">Карта: {{ app.patient.med_card_number }}</small>
+                            </td>
+                            <td>{{ app.patient.phone }}</td>
+                            <td>
+                                {% if app.status == 'Scheduled' %}
+                                    <span class="badge bg-warning text-dark">Ожидает</span>
+                                {% elif app.status == 'Completed' %}
+                                    <span class="badge bg-success">Завершен</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ app.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                {% if app.status == 'Scheduled' %}
+                                    <a href="{% url 'doctor_complete' app.id %}" class="btn btn-primary btn-sm shadow-sm">
+                                         Начать прием
+                                    </a>
+                                {% elif app.status == 'Completed' %}
+                                    <!-- кнопка архива -->
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#doc_row{{ app.id }}" aria-expanded="false">
+                                         Архив
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% if app.status == 'Completed' and app.appointment %}
+                        <tr>
+                            <td colspan="5" class="p-0 border-0">
+                                <div class="collapse bg-light border-bottom" id="doc_row{{ app.id }}">
+                                    <div class="p-4">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6 class="text-primary">Результаты приема:</h6>
+                                                <p class="mb-1"><strong>Жалобы:</strong> {{ app.appointment.complaints }}</p>
+                                                <p><strong>Диагноз:</strong> {{ app.appointment.diagnosis.name }} ({{ app.appointment.diagnosis.code_icd }})</p>
+                                            </div>
+                                            <div class="col-md-6 border-start">
+                                                <h6 class="text-primary">Оказанные услуги:</h6>
+                                                <ul class="list-group list-group-flush bg-transparent">
+                                                    {% for perf in app.appointment.performedservice_set.all %}
+                                                        <li class="list-group-item bg-transparent py-1 ps-0">
+                                                            • {{ perf.service.name }}
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <h5>На сегодня записей нет </h5>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}pip install openpyxl

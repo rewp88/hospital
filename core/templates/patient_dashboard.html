@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center">
+                <h4 class="card-title text-primary">{{ patient.full_name }}</h4>
+                <p class="text-muted mb-1">Номер карты: <strong>{{ patient.med_card_number }}</strong></p>
+                <p class="text-muted">Телефон: {{ patient.phone }}</p>
+                <hr>
+                <a href="{% url 'book_appointment' %}" class="btn btn-success w-100 py-2">
+                     Записаться на прием
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <h3 class="mb-3"> История болезни</h3>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0" style="border-collapse: collapse;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Дата</th>
+                            <th>Врач</th>
+                            <th>Статус</th>
+                            <th>Результат</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in appointments %}
+                        <tr class="align-middle">
+                            <td class="ps-4 fw-bold">{{ app.date_time|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {{ app.doctor.full_name }}
+                                <br>
+                                <small class="text-muted">{{ app.doctor.specialization.name }}</small>
+                            </td>
+                            <td>
+                                {% if app.status == 'Completed' %}
+                                    <span class="badge bg-success">Завершен</span>
+                                {% elif app.status == 'Scheduled' %}
+                                    <span class="badge bg-primary">Запланирован</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ app.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.status == 'Completed' %}
+                                    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#row{{ app.id }}" aria-expanded="false">
+                                         Открыть
+                                    </button>
+                                {% else %}
+                                    <small class="text-muted">—</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% if app.status == 'Completed' %}
+                        <tr>
+                            <td colspan="4" class="p-0 border-0">
+                                <div class="collapse bg-light border-bottom" id="row{{ app.id }}">
+                                    <div class="p-4">
+                                        <h5 class="text-primary mb-3">Протокол приема</h5>
+
+                                        {% if app.appointment %}
+                                            <div class="mb-2">
+                                                <strong> Жалобы:</strong>
+                                                <p class="mb-1">{{ app.appointment.complaints }}</p>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <strong> Диагноз:</strong>
+                                                <span class="fw-bold text-danger">
+                                                    {{ app.appointment.diagnosis.name }} ({{ app.appointment.diagnosis.code_icd }})
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong> Оказанные услуги:</strong>
+                                                <ul class="list-group mt-1">
+                                                    {% for perf in app.appointment.performedservice_set.all %}
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            {{ perf.service.name }}
+                                                            <span class="badge bg-secondary rounded-pill">{{ perf.service.cost }} ₽</span>
+                                                        </li>
+                                                    {% empty %}
+                                                        <li class="list-group-item text-muted">Услуги не указаны</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-warning">Врач еще не заполнил детали приема.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center p-4 text-muted">Записей пока нет.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
