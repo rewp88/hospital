@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4>Запись на прием</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="bookingForm">
+                        {% csrf_token %}
+
+                        <!-- специализация -->
+                        <div class="mb-3">
+                            <label class="form-label">Специализация</label>
+                            {{ form.specialization }}
+                        </div>
+
+                        <!-- врач -->
+                        <div class="mb-3">
+                            <label class="form-label">Врач</label>
+                            {{ form.doctor }}
+                        </div>
+
+                        <!-- дата -->
+                        <div class="mb-3">
+                            <label class="form-label">Дата</label>
+                            {{ form.date }}
+                        </div>
+
+                        <!--  слоты Кнопки -->
+                        <div class="mb-3">
+                            <label class="form-label">Доступное время</label>
+                            <div id="slots-container" class="d-flex flex-wrap gap-2">
+                                <span class="text-muted small">Выберите врача и дату...</span>
+                            </div>
+                        </div>
+
+                        {{ form.date_time }}
+
+                        <button type="submit" class="btn btn-success w-100" id="submitBtn" disabled>
+                            Записаться
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const specSelect = document.getElementById('id_specialization');
+    const doctorSelect = document.getElementById('id_doctor');
+    const dateInput = document.getElementById('id_date');
+    const slotsDiv = document.getElementById('slots-container');
+    const hiddenInput = document.getElementById('id_date_time');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // 1. Фильтр врачей при смене специализации
+    specSelect.addEventListener('change', function() {
+        const specId = this.value;
+        fetch(`/ajax/doctors/?spec_id=${specId}`)
+            .then(res => res.json())
+            .then(data => {
+                doctorSelect.innerHTML = '<option value="">---------</option>';
+                data.forEach(doc => {
+                    doctorSelect.innerHTML += `<option value="${doc.id}">${doc.full_name}</option>`;
+                });
+                slotsDiv.innerHTML = '<span class="text-muted small">Врач изменился, выберите дату заново.</span>';
+            });
+    });
+
+    // 2. Загрузка слотов при смене Врача или Даты
+    function loadSlots() {
+        const docId = doctorSelect.value;
+        const dateVal = dateInput.value;
+
+        if (!docId || !dateVal) return;
+
+        slotsDiv.innerHTML = 'Загрузка...';
+
+        fetch(`/ajax/slots/?doctor_id=${docId}&date=${dateVal}`)
+            .then(res => res.json())
+            .then(times => {
+                slotsDiv.innerHTML = '';
+                if (times.length === 0) {
+                    slotsDiv.innerHTML = '<span class="text-danger">Нет свободного времени!</span>';
+                } else {
+                    times.forEach(time => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn btn-outline-primary btn-sm';
+                        btn.innerText = time;
+                        btn.onclick = function() {
+                            // Подсветка
+                            document.querySelectorAll('#slots-container button').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            // Запись значения
+                            hiddenInput.value = dateVal + ' ' + time;
+                            submitBtn.disabled = false;
+                        };
+                        slotsDiv.appendChild(btn);
+                    });
+                }
+            });
+    }
+
+    doctorSelect.addEventListener('change', loadSlots);
+    dateInput.addEventListener('change', loadSlots);
+</script>
+
+<style>
+    .btn.active { background-color: #0d6efd; color: white; }
+</style>
+{% endblock %}

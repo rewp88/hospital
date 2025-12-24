@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4> Протокол приема</h4>
+                </div>
+                <div class="card-body">
+                    <!-- информация о пациенте -->
+                    <div class="alert alert-light border">
+                        <p><strong>Пациент:</strong> {{ booking.patient.full_name }}</p>
+                        <p><strong>Дата записи:</strong> {{ booking.date_time|date:"d.m.Y H:i" }}</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- жалобы -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Жалобы пациента</label>
+                            {{ form.complaints }}
+                            <div class="form-text">Опишите симптомы и состояние пациента.</div>
+                        </div>
+
+                        <div class="row">
+                            <!-- диагноз -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Диагноз (МКБ)</label>
+                                {{ form.diagnosis }}
+                            </div>
+
+                            <!-- услуги -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Оказанные услуги</label>
+                                {{ form.services }}
+                                <div class="form-text small">Зажмите Ctrl , чтобы выбрать несколько услуг сразу.</div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                 Сохранить и завершить прием
+                            </button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
