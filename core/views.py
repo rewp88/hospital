@@ -36,33 +36,31 @@ def logout_view(request):
 
 def dashboard_view(request):
     user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')
+    if not user_id: return redirect('login')
 
     user = User.objects.get(id=user_id)
     role_id = request.session.get('role_id')
     context = {'user': user}
 
-    if role_id == 3:  # ПАЦИЕНТ
-        if user.login == 'smirnov_pat':
-            patient = Patient.objects.get(id=1)
-        elif user.login == 'kuznetsov_pat':
-            patient = Patient.objects.get(id=2)
-        else:
-            patient = Patient.objects.first()
+    if role_id == 3:
+        try:
+            patient = Patient.objects.get(user=user)
 
-        context['patient'] = patient
-        context['appointments'] = AppointmentBooking.objects.filter(patient=patient).order_by('-date_time')
-        return render(request, 'patient_dashboard.html', context)
+            context['patient'] = patient
+            context['appointments'] = AppointmentBooking.objects.filter(patient=patient).order_by('-date_time')
+            return render(request, 'patient_dashboard.html', context)
+        except Patient.DoesNotExist:
+            return HttpResponse("Ошибка: Ваш профиль пациента не найден. Обратитесь в регистратуру.")
 
-    elif role_id == 2:  # ВРАЧ
+    elif role_id == 2:
         try:
             doctor = Doctor.objects.get(user=user)
             context['doctor'] = doctor
             context['appointments'] = AppointmentBooking.objects.filter(doctor=doctor).order_by('date_time')
+            return render(request, 'doctor_dashboard.html', context)
         except Doctor.DoesNotExist:
             context['error'] = "Профиль врача не найден."
-        return render(request, 'doctor_dashboard.html', context)
+            return render(request, 'doctor_dashboard.html', context)
 
     else:
         return redirect('/admin/')
@@ -76,7 +74,6 @@ def load_doctors(request):
         doctors = list(Doctor.objects.all().values('id', 'full_name'))
     return JsonResponse(doctors, safe=False)
 
-
 def load_slots(request):
     doctor_id = request.GET.get('doctor_id')
     date_str = request.GET.get('date')
@@ -89,7 +86,6 @@ def load_slots(request):
     except ValueError:
         return JsonResponse([], safe=False)
 
-    # Ищем занятое время
     bookings = AppointmentBooking.objects.filter(
         doctor_id=doctor_id,
         date_time__date=search_date
@@ -115,21 +111,20 @@ def book_appointment_view(request):
     if not user_id: return redirect('login')
 
     user = User.objects.get(id=user_id)
-    if user.login == 'smirnov_pat':
-        patient = Patient.objects.get(id=1)
-    elif user.login == 'kuznetsov_pat':
-        patient = Patient.objects.get(id=2)
-    else:
-        patient = Patient.objects.first()
+
+    try:
+        patient = Patient.objects.get(user=user)
+    except Patient.DoesNotExist:
+        return redirect('dashboard')
 
     if request.method == 'POST':
-        # Берем сырые данные
+        form = BookingForm(request.POST)
+
         raw_date_time = request.POST.get('date_time')
         doc_id = request.POST.get('doctor')
 
         if raw_date_time and doc_id:
             doctor = Doctor.objects.get(id=doc_id)
-
             final_dt = datetime.strptime(raw_date_time, '%Y-%m-%d %H:%M')
 
             AppointmentBooking.objects.create(

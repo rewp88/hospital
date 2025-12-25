@@ -71,7 +71,6 @@ class Doctor(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.specialization})"
 
-
 class Patient(models.Model):
     full_name = models.CharField(max_length=150)
     address = models.TextField(blank=True, null=True)
@@ -79,15 +78,16 @@ class Patient(models.Model):
     med_card_number = models.CharField(unique=True, max_length=50)
     phone = models.CharField(max_length=20)
 
+    user = models.OneToOneField(User, models.DO_NOTHING, blank=True, null=True)
+
     class Meta:
-        managed = False
+        managed = True
         db_table = 'patients'
         verbose_name = 'Пациент'
         verbose_name_plural = 'Пациенты'
 
     def __str__(self):
         return self.full_name
-
 
 class Diagnosis(models.Model):
     name = models.CharField(max_length=255)
